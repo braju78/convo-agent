@@ -1,0 +1,26 @@
+[project]
+name = "convo-agent"
+version = "0.1.0"
+description = "Local conversation agent with web search, built on agent-platform-sdk"
+requires-python = ">=3.11"
+dependencies = [
+    "agent-utils-core @ git+ssh://git@github.com/BambooHR/agent-platform-sdk-python.git@agent-utils-core-v5.2.0#subdirectory=packages/agent-utils-core",
+    "httpx>=0.27",
+    "pydantic>=2.7",
+    "python-dotenv>=1.0",
+    "temporalio>=1.7",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.5",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
