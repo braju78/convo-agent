@@ -24,8 +24,22 @@ class Source(BaseModel):
 class ChatInput(BaseModel):
     conversation_id: str
     message: str
-    history: list[ChatMessage] = Field(default_factory=list)
     user_id: str = "local-user"
+
+
+class FetchHistoryInput(BaseModel):
+    conversation_id: str
+
+
+class FetchHistoryOutput(BaseModel):
+    messages: list[ChatMessage] = Field(default_factory=list)
+
+
+class AppendMessageInput(BaseModel):
+    conversation_id: str
+    role: Literal["user", "assistant"]
+    content: str
+    sources: list[Source] = Field(default_factory=list)
 
 
 class SearchResult(BaseModel):
