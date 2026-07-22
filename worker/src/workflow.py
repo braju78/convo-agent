@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
+import logging
+from typing import Any, Iterable
 
 from temporalio import workflow
 
@@ -11,10 +12,12 @@ from agent_utils.core.context import initialize_context
 from agent_utils.core.common.identity import TenantCallerIdentity
 from agent_utils.core.pydantic_ai.agent_workflow import AgentWorkflow
 
-from worker.src.dtos import ChatInput, ChatResponse, ConvoAgentOutput
+from worker.src.dtos import ChatInput, ChatResponse, ConvoAgentOutput, Source
 from worker.src.prompt import SYSTEM_PROMPT
 from worker.src.shared import TASK_QUEUE
 from worker.src.tools.web_search import web_search
+
+logger = logging.getLogger(__name__)
 
 
 @workflow.defn
@@ -63,3 +66,56 @@ class ConvoAgent(AgentWorkflow[ChatInput, ConvoAgentOutput]):
         # prompt building, ReAct loop, and output wrapping. Phase 3 will wire the
         # full history into execution_options.message_history before delegating.
         return await super().run(input)
+
+    def _build_output(self, result: ChatResponse) -> ConvoAgentOutput:
+        """Wrap LLM result; drop hallucinated citations before returning.
+
+        Any URL the LLM lists in ``sources`` MUST have been produced by an
+        actual ``web_search`` call in this run. URLs not present in any
+        tool result are dropped and logged.
+        """
+        cited_urls = _collect_search_urls(self.run_metadata.tool_calls if self.run_metadata else [])
+        clean, dropped = _validate_sources(result.sources, cited_urls)
+        if dropped:
+            logger.warning(
+                "Dropped %d hallucinated source URL(s) from ChatResponse: %s",
+                len(dropped),
+                [s.url for s in dropped],
+            )
+
+        validated = result.model_copy(update={"sources": clean})
+        metadata = self.run_metadata
+        return ConvoAgentOutput(
+            result=validated,
+            tool_calls=(metadata.tool_calls or None) if metadata else None,
+            reasoning_trace=(metadata.reasoning_trace or None) if metadata else None,
+            iterations=metadata.iterations if metadata else None,
+        )
+
+
+def _collect_search_urls(tool_calls: Iterable[Any]) -> set[str]:
+    """Collect every URL returned by any web_search invocation in this run."""
+    urls: set[str] = set()
+    for call in tool_calls or []:
+        if getattr(call, "tool_name", None) != "web_search":
+            continue
+        result = getattr(call, "result", None)
+        if result is None:
+            continue
+        # result may be a dict (serialized) or SearchResult model
+        items = result.get("results") if isinstance(result, dict) else getattr(result, "results", None)
+        for item in items or []:
+            url = item.get("url") if isinstance(item, dict) else getattr(item, "url", None)
+            if url:
+                urls.add(url)
+    return urls
+
+
+def _validate_sources(
+    proposed: list[Source], allowed: set[str]
+) -> tuple[list[Source], list[Source]]:
+    """Split proposed sources into (kept, dropped) based on the allowed-URL set."""
+    kept, dropped = [], []
+    for source in proposed:
+        (kept if source.url in allowed else dropped).append(source)
+    return kept, dropped
