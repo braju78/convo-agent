@@ -1,0 +1,39 @@
+{# HTMX fragment: two bubbles (user echo + assistant reply). #}
+<div class="message user">
+  <div class="bubble">{{ user_message }}</div>
+</div>
+<div class="message assistant">
+  <div class="bubble">
+    {{ text | safe }}
+    {% if sources %}
+    <details class="sources">
+      <summary>Sources ({{ sources | length }})</summary>
+      <ol>
+        {% for s in sources %}
+        <li>
+          <a href="{{ s.url }}" target="_blank" rel="noopener noreferrer">{{ s.title or s.url }}</a>
+          {% if s.snippet %}<div class="snippet">{{ s.snippet }}</div>{% endif %}
+        </li>
+        {% endfor %}
+      </ol>
+    </details>
+    {% endif %}
+    {% if suggested_tools %}
+    <details class="suggested">
+      <summary>Recommended connectors ({{ suggested_tools | length }})</summary>
+      <ul>
+        {% for t in suggested_tools %}
+        <li>
+          <strong>{{ t.title }}</strong> — {{ t.why_relevant }}
+          <details><summary>How to enable</summary>
+            <ol>{% for step in t.config_steps %}<li><code>{{ step }}</code></li>{% endfor %}</ol>
+          </details>
+        </li>
+        {% endfor %}
+      </ul>
+    </details>
+    {% endif %}
+  </div>
+</div>
+{# Piggyback: writes conversation_id back to the form via a hidden HTMX header on the response. #}
+<div id="conv-meta" hx-swap-oob="true" data-conversation-id="{{ conversation_id }}"></div>

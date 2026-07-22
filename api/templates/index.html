@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>convo-agent</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header>
+    <h1>convo-agent</h1>
+    <div class="header-actions">
+      <span id="conv-badge" class="badge muted">no conversation</span>
+      <button id="new-conv-btn" type="button" onclick="startNewConversation()">New chat</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="messages" class="messages"></div>
+    <div id="conv-meta" data-conversation-id="" hidden></div>
+
+    <form
+      id="chat-form"
+      hx-post="/chat/htmx"
+      hx-target="#messages"
+      hx-swap="beforeend"
+      hx-on::before-request="onBeforeSend(event)"
+      hx-on::after-request="onAfterSend(event)"
+    >
+      <input type="hidden" id="conversation_id" name="conversation_id" value="">
+      <div class="input-row">
+        <textarea
+          id="message-input"
+          name="message"
+          placeholder="Ask anything — try a current-events question to see citations."
+          required
+          autofocus
+          rows="2"
+        ></textarea>
+        <button type="submit" id="send-btn">Send</button>
+      </div>
+    </form>
+  </main>
+
+  <script src="/static/chat.js"></script>
+</body>
+</html>

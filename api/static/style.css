@@ -1,0 +1,213 @@
+:root {
+  --bg: #fafafa;
+  --fg: #1a1a1a;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --bubble-user: #2563eb;
+  --bubble-user-fg: #fff;
+  --bubble-assistant: #f3f4f6;
+  --bubble-assistant-fg: #1a1a1a;
+  --accent: #2563eb;
+  --code-bg: #f5f5f7;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f0f10;
+    --fg: #e5e5e5;
+    --muted: #9ca3af;
+    --border: #262626;
+    --bubble-user: #2563eb;
+    --bubble-user-fg: #fff;
+    --bubble-assistant: #1f1f22;
+    --bubble-assistant-fg: #e5e5e5;
+    --accent: #60a5fa;
+    --code-bg: #17171a;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg);
+}
+
+header h1 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.badge.active { color: var(--accent); border-color: var(--accent); }
+.badge.muted { color: var(--muted); }
+
+button {
+  font: inherit;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  cursor: pointer;
+}
+button:hover { background: var(--bubble-assistant); }
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  max-width: 780px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 20px;
+  overflow: hidden;
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 12px;
+}
+
+.message { display: flex; }
+.message.user { justify-content: flex-end; }
+.message.assistant { justify-content: flex-start; }
+
+.bubble {
+  max-width: 78%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+.message.user .bubble {
+  background: var(--bubble-user);
+  color: var(--bubble-user-fg);
+  border-bottom-right-radius: 4px;
+}
+
+.message.assistant .bubble {
+  background: var(--bubble-assistant);
+  color: var(--bubble-assistant-fg);
+  border-bottom-left-radius: 4px;
+}
+
+.message.assistant.pending .bubble::after {
+  content: "…";
+  color: var(--muted);
+  animation: pulse 1.2s infinite;
+}
+@keyframes pulse { 50% { opacity: 0.3; } }
+
+details.sources, details.suggested {
+  margin-top: 10px;
+  font-size: 13px;
+}
+details summary {
+  cursor: pointer;
+  color: var(--muted);
+  user-select: none;
+}
+details ol, details ul {
+  margin: 6px 0 0 0;
+  padding-left: 22px;
+}
+details li { margin: 4px 0; }
+.snippet {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+details code {
+  background: var(--code-bg);
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+form#chat-form {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.input-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+textarea#message-input {
+  flex: 1;
+  font: inherit;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  resize: none;
+  min-height: 40px;
+  max-height: 160px;
+}
+textarea#message-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  border-color: transparent;
+}
+
+button#send-btn {
+  padding: 10px 20px;
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+  font-weight: 500;
+}
+button#send-btn:hover { filter: brightness(1.1); }
+button#send-btn:disabled { opacity: 0.5; cursor: wait; }
+
+.htmx-request textarea,
+.htmx-request button#send-btn {
+  opacity: 0.6;
+  pointer-events: none;
+}

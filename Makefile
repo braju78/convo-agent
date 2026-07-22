@@ -12,6 +12,9 @@ worker:
 api:
 	uv run uvicorn api.app:app --host 0.0.0.0 --port 8000 --reload
 
+open:
+	open http://localhost:8000
+
 run-once:
 	@test -n "$(MSG)" || (echo "usage: make run-once MSG='hello'" && exit 1)
 	uv run temporal workflow execute \

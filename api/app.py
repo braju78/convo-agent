@@ -9,7 +9,11 @@ from datetime import datetime
 from typing import AsyncIterator
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Form, HTTPException, Request
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from pathlib import Path
 from pydantic import BaseModel
 
 from agent_utils.core.logging.setup import configure_logging
@@ -17,6 +21,9 @@ from api.store import ConversationStore, sources_from_json
 from api.temporal_client import ConvoAgentClient
 from worker.src.dtos import ChatInput, ChatResponse, Source
 from worker.src.shared import SERVICE_NAME
+
+_HERE = Path(__file__).parent
+_templates = Jinja2Templates(directory=str(_HERE / "templates"))
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -35,6 +42,7 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="convo-agent API", lifespan=_lifespan)
+app.mount("/static", StaticFiles(directory=str(_HERE / "static")), name="static")
 
 
 # ---------- request / response models ----------
@@ -76,6 +84,46 @@ class ConversationDetail(BaseModel):
 @app.get("/livez")
 async def livez() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/", response_class=HTMLResponse)
+async def index(request: Request) -> HTMLResponse:
+    return _templates.TemplateResponse(request, "index.html", {})
+
+
+@app.post("/chat/htmx", response_class=HTMLResponse)
+async def chat_htmx(
+    request: Request,
+    message: str = Form(...),
+    conversation_id: str = Form(""),
+) -> HTMLResponse:
+    """HTMX-friendly variant of /chat — returns HTML fragment, not JSON."""
+    conv_id = conversation_id or None
+    if conv_id is None:
+        conv = await store.create_conversation()
+        conv_id = conv.id
+    elif await store.get_conversation(conv_id) is None:
+        # Recover gracefully: user's localStorage points at a stale/missing
+        # convo. Start fresh instead of 404-ing the widget.
+        conv = await store.create_conversation()
+        conv_id = conv.id
+
+    result = await temporal_client.run_turn(
+        ChatInput(conversation_id=conv_id, message=message)
+    )
+    reply: ChatResponse = result.result
+
+    return _templates.TemplateResponse(
+        request,
+        "_message.html",
+        {
+            "conversation_id": conv_id,
+            "user_message": message,
+            "text": reply.text,
+            "sources": reply.sources,
+            "suggested_tools": reply.suggested_tools,
+        },
+    )
 
 
 @app.post("/chat", response_model=ChatReply)

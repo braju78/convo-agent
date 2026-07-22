@@ -64,7 +64,10 @@ make worker
 # terminal 3 — FastAPI (chat + history endpoints)
 make api
 
-# terminal 4 — chat via curl
+# terminal 4 — chat via browser (recommended)
+make open   # opens http://localhost:8000
+
+# or via curl:
 make chat MSG='what year is it'
 # response includes conversation_id; pass it back for multi-turn:
 make chat MSG='what was my previous question' CID=<paste-conversation-id>
@@ -97,7 +100,7 @@ You can also skip the API and drive the workflow directly via `make run-once MSG
 | **1 — Bootstrap** ✓ | Worker + `ConvoAgent` + web_search io_tool + citations DTO |
 | **2 — Citations** ✓ | Server-side URL validation drops hallucinated cites; strict prompt |
 | **3 — API + persistence** ✓ | FastAPI + SQLite; workflow owns conversation lifecycle via activities; multi-turn `message_history` wired through pydantic-ai |
-| 4 — Web UI | HTMX chat interface; localStorage conversation IDs |
+| **4 — Web UI** ✓ | HTMX chat at `GET /`; localStorage conversation IDs; source + suggested-connector cards |
 | 5 — Observability | Local Jaeger; span attributes; log correlation |
 | 6a — Tool catalog | Meta-tool `suggest_tools`; self-aware capability-gap recommendations |
 
