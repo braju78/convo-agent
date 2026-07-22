@@ -23,6 +23,7 @@ from agent_utils.core.worker import (
     get_default_nexus_handlers,
 )
 
+from worker.src.activities.history import append_message, fetch_conversation_history
 from worker.src.shared import SERVICE_NAME, TASK_QUEUE
 from worker.src.workflow import ConvoAgent
 
@@ -51,6 +52,8 @@ async def main() -> None:
             *get_all_worker_activities(),
             *ActivityRegistry.get_all_activities(),
             *ConvoAgent.get_temporal_activities(),
+            fetch_conversation_history,
+            append_message,
         ],
         nexus_service_handlers=get_default_nexus_handlers(),
         interceptors=get_default_interceptors(),

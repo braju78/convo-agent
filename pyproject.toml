@@ -5,10 +5,15 @@ description = "Local conversation agent with web search, built on agent-platform
 requires-python = ">=3.11"
 dependencies = [
     "agent-utils-core @ git+ssh://git@github.com/BambooHR/agent-platform-sdk-python.git@agent-utils-core-v5.2.0#subdirectory=packages/agent-utils-core",
+    "aiosqlite>=0.20",
+    "fastapi>=0.115",
+    "greenlet>=3.5.4",
     "httpx>=0.27",
     "pydantic>=2.7",
     "python-dotenv>=1.0",
+    "sqlmodel>=0.0.22",
     "temporalio>=1.7",
+    "uvicorn[standard]>=0.32",
 ]
 
 [dependency-groups]

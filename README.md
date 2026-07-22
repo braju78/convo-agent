@@ -52,7 +52,7 @@ make install
 
 ## Run
 
-Three terminals.
+Four terminals.
 
 ```bash
 # terminal 1 — Temporal dev server
@@ -61,11 +61,27 @@ make temporal
 # terminal 2 — worker
 make worker
 
-# terminal 3 — send one message via temporal CLI
-make run-once MSG='what year is it'
+# terminal 3 — FastAPI (chat + history endpoints)
+make api
+
+# terminal 4 — chat via curl
+make chat MSG='what year is it'
+# response includes conversation_id; pass it back for multi-turn:
+make chat MSG='what was my previous question' CID=<paste-conversation-id>
 ```
 
-Temporal Web UI at http://localhost:8088.
+Temporal Web UI at http://localhost:8088. FastAPI docs at http://localhost:8000/docs.
+
+### HTTP surface
+
+| Route | Purpose |
+|-------|---------|
+| `POST /chat` | `{message, conversation_id?}` → runs a turn, persists both sides, returns `{conversation_id, response}` |
+| `GET /conversations` | List conversations, most-recently-updated first |
+| `GET /conversations/{id}` | Full history including per-message sources |
+| `GET /livez` | Health check |
+
+You can also skip the API and drive the workflow directly via `make run-once MSG='...'` (single-turn, no persistence).
 
 ## Phase 1 verification
 
@@ -79,8 +95,8 @@ Temporal Web UI at http://localhost:8088.
 | Phase | Scope |
 |-------|-------|
 | **1 — Bootstrap** ✓ | Worker + `ConvoAgent` + web_search io_tool + citations DTO |
-| 2 — Real search + citation pipeline | Tavily verified; prompt-tune citation quality; server-side URL validation |
-| 3 — API + persistence | FastAPI wrapper; SQLite conversation store; multi-turn context |
+| **2 — Citations** ✓ | Server-side URL validation drops hallucinated cites; strict prompt |
+| **3 — API + persistence** ✓ | FastAPI + SQLite; workflow owns conversation lifecycle via activities; multi-turn `message_history` wired through pydantic-ai |
 | 4 — Web UI | HTMX chat interface; localStorage conversation IDs |
 | 5 — Observability | Local Jaeger; span attributes; log correlation |
 | 6a — Tool catalog | Meta-tool `suggest_tools`; self-aware capability-gap recommendations |
