@@ -1,0 +1,20 @@
+services:
+  otel-lgtm:
+    image: grafana/otel-lgtm:0.11.10
+    container_name: convo-agent-otel-lgtm
+    restart: unless-stopped
+    ports:
+      - "3030:3000"   # Grafana UI (host 3030 → container 3000)
+      - "4327:4317"   # OTLP gRPC (host 4327 → container 4317; 4317 taken by other infra)
+      - "4328:4318"   # OTLP HTTP  (host 4328 → container 4318; 4318 taken by other infra)
+    volumes:
+      - lgtm-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+volumes:
+  lgtm-data:

@@ -16,6 +16,7 @@ from fastapi.templating import Jinja2Templates
 from pathlib import Path
 from pydantic import BaseModel
 
+from agent_utils.core.logging.agent_telemetry import configure_agent_telemetry
 from agent_utils.core.logging.setup import configure_logging
 from api.store import ConversationStore, sources_from_json
 from api.temporal_client import ConvoAgentClient
@@ -25,7 +26,7 @@ from worker.src.shared import SERVICE_NAME
 _HERE = Path(__file__).parent
 _templates = Jinja2Templates(directory=str(_HERE / "templates"))
 
-load_dotenv()
+load_dotenv(override=True)
 logger = logging.getLogger(__name__)
 
 store = ConversationStore(url=os.getenv("CONVO_DB_URL", "sqlite+aiosqlite:///./convo.db"))
@@ -35,6 +36,10 @@ temporal_client = ConvoAgentClient()
 @asynccontextmanager
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     configure_logging(service_name=f"{SERVICE_NAME}-api")
+    configure_agent_telemetry(
+        service_name=f"{SERVICE_NAME}-api",
+        environment=os.getenv("ENVIRONMENT", "development"),
+    )
     await store.initialize()
     logger.info("API ready; SQLite store initialized")
     yield
