@@ -14,6 +14,7 @@ from temporalio.worker.workflow_sandbox import (
 )
 
 from agent_utils.core.activity import ActivityRegistry
+from agent_utils.core.logging.agent_telemetry import configure_agent_telemetry
 from agent_utils.core.logging.setup import configure_logging
 from agent_utils.core.worker import (
     SANDBOX_PASSTHROUGH_MODULES,
@@ -27,13 +28,19 @@ from worker.src.activities.history import append_message, fetch_conversation_his
 from worker.src.shared import SERVICE_NAME, TASK_QUEUE
 from worker.src.workflow import ConvoAgent
 
-load_dotenv()
+load_dotenv(override=True)
 
 logger = logging.getLogger(__name__)
 
 
 async def main() -> None:
     configure_logging(service_name=SERVICE_NAME)
+    # Enables pydantic-ai OTEL export via Agent.instrument_all when
+    # OTEL_EXPORTER_OTLP_ENDPOINT is set; no-op otherwise.
+    configure_agent_telemetry(
+        service_name=f"{SERVICE_NAME}-worker",
+        environment=os.getenv("ENVIRONMENT", "development"),
+    )
     logger.info("Starting worker on task queue %s", TASK_QUEUE)
 
     client = await connect_temporal()

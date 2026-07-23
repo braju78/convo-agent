@@ -1,4 +1,4 @@
-.PHONY: install temporal worker api test lint fmt clean
+.PHONY: install temporal worker api otel-up otel-down otel-open otel-logs test lint fmt clean
 
 install:
 	uv sync
@@ -14,6 +14,22 @@ api:
 
 open:
 	open http://localhost:8000
+
+otel-up:
+	docker compose up -d otel-lgtm
+	@echo "Grafana UI: http://localhost:3030 (admin/admin — skip password reset when prompted)"
+	@echo "Waiting for healthcheck..."
+	@until docker compose ps otel-lgtm --format json 2>/dev/null | grep -q '"Health":"healthy"'; do sleep 2; done
+	@echo "otel-lgtm ready."
+
+otel-down:
+	docker compose down
+
+otel-open:
+	open http://localhost:3030
+
+otel-logs:
+	docker compose logs -f otel-lgtm
 
 run-once:
 	@test -n "$(MSG)" || (echo "usage: make run-once MSG='hello'" && exit 1)

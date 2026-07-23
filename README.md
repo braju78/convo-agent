@@ -52,28 +52,47 @@ make install
 
 ## Run
 
-Four terminals.
-
 ```bash
+# One-time — start local observability stack (Grafana + Tempo + Loki + Mimir)
+make otel-up
+# Grafana UI opens at http://localhost:3030 (admin/admin)
+
 # terminal 1 — Temporal dev server
 make temporal
 
-# terminal 2 — worker
+# terminal 2 — worker (emits OTel spans when OTEL_EXPORTER_OTLP_ENDPOINT set)
 make worker
 
-# terminal 3 — FastAPI (chat + history endpoints)
+# terminal 3 — FastAPI
 make api
 
-# terminal 4 — chat via browser (recommended)
-make open   # opens http://localhost:8000
+# terminal 4 — chat via browser
+make open
 
 # or via curl:
 make chat MSG='what year is it'
-# response includes conversation_id; pass it back for multi-turn:
 make chat MSG='what was my previous question' CID=<paste-conversation-id>
+
+# Stop observability:
+make otel-down
 ```
 
-Temporal Web UI at http://localhost:8088. FastAPI docs at http://localhost:8000/docs.
+- Chat UI: http://localhost:8000
+- Temporal Web UI: http://localhost:8088
+- FastAPI docs: http://localhost:8000/docs
+- Grafana (traces / logs / metrics): http://localhost:3030
+
+## Inspecting traces in Grafana
+
+1. Open http://localhost:3030 → **Explore** → data source **Tempo** → **Search**.
+2. Filter by `Service Name: convo-agent-worker` or `convo-agent-api`.
+3. Click a trace. Spans show:
+   - `bamboohr.caller_identity` (JSON with tenant_id, principal_id — credentials excluded)
+   - `agent.run.id`, `agent.trace_id`, `agent.root_orchestrator_id`
+   - `temporalWorkflowID`, `temporalRunID`
+   - pydantic-ai `gen_ai.*` attributes: `gen_ai.input.messages`, `gen_ai.output.messages`, `gen_ai.tool.definitions[]`, token counts
+
+Metrics live under Explore → data source **Prometheus (Mimir)** — search `activity_duration_seconds`, `llm_call_duration_seconds`, `workflow_started_total`.
 
 ### HTTP surface
 
@@ -101,7 +120,7 @@ You can also skip the API and drive the workflow directly via `make run-once MSG
 | **2 — Citations** ✓ | Server-side URL validation drops hallucinated cites; strict prompt |
 | **3 — API + persistence** ✓ | FastAPI + SQLite; workflow owns conversation lifecycle via activities; multi-turn `message_history` wired through pydantic-ai |
 | **4 — Web UI** ✓ | HTMX chat at `GET /`; localStorage conversation IDs; source + suggested-connector cards |
-| 5 — Observability | Local Jaeger; span attributes; log correlation |
+| **5 — Observability** ✓ | Grafana LGTM (traces + metrics + logs) via SDK's `configure_agent_telemetry`; `bamboohr.caller_identity` + `agent.run.id` on every span |
 | 6a — Tool catalog | Meta-tool `suggest_tools`; self-aware capability-gap recommendations |
 
 ## Architecture notes
